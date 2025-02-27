@@ -1,65 +1,96 @@
-<p align="center">
-  <a href="https://www.medusajs.com">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://user-images.githubusercontent.com/59018053/229103275-b5e482bb-4601-46e6-8142-244f531cebdb.svg">
-    <source media="(prefers-color-scheme: light)" srcset="https://user-images.githubusercontent.com/59018053/229103726-e5b529a3-9b3f-4970-8a1f-c6af37f087bf.svg">
-    <img alt="Medusa logo" src="https://user-images.githubusercontent.com/59018053/229103726-e5b529a3-9b3f-4970-8a1f-c6af37f087bf.svg">
-    </picture>
-  </a>
-</p>
-<h1 align="center">
-  Medusa Plugin Starter
-</h1>
 
-<h4 align="center">
-  <a href="https://docs.medusajs.com">Documentation</a> |
-  <a href="https://www.medusajs.com">Website</a>
-</h4>
+## Information
+Not a full-time professional developer so Medusa 2.0 is very hard to learn for me. 
+If anyone want to improve this plugin, just submit your PR
 
-<p align="center">
-  Building blocks for digital commerce
-</p>
-<p align="center">
-  <a href="https://github.com/medusajs/medusa/blob/master/CONTRIBUTING.md">
-    <img src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat" alt="PRs welcome!" />
-  </a>
-    <a href="https://www.producthunt.com/posts/medusa"><img src="https://img.shields.io/badge/Product%20Hunt-%231%20Product%20of%20the%20Day-%23DA552E" alt="Product Hunt"></a>
-  <a href="https://discord.gg/xpCwq3Kfn8">
-    <img src="https://img.shields.io/badge/chat-on%20discord-7289DA.svg" alt="Discord Chat" />
-  </a>
-  <a href="https://twitter.com/intent/follow?screen_name=medusajs">
-    <img src="https://img.shields.io/twitter/follow/medusajs.svg?label=Follow%20@medusajs" alt="Follow @medusajs" />
-  </a>
-</p>
 
-## Compatibility
 
-This starter is compatible with versions >= 2.4.0 of `@medusajs/medusa`. 
+# @kb0912/notification-brevo
 
-## Getting Started
+A Medusa plugin to integrate Brevo (Sendinblue) notification provider for sending emails such as order confirmations and abandoned cart reminders.
 
-Visit the [Quickstart Guide](https://docs.medusajs.com/learn/installation) to set up a server.
 
-Visit the [Plugins documentation](https://docs.medusajs.com/learn/fundamentals/plugins) to learn more about plugins and how to create them.
 
-Visit the [Docs](https://docs.medusajs.com/learn/installation#get-started) to learn more about our system requirements.
+### Features
+- Send email notifications for order placement, order cancellation, customer creation, and abandoned carts using Brevo.
+- Configurable delays for abandoned cart reminders.
+- Supports multiple notification stages (first, second, third).
 
-## What is Medusa
+### Installation
 
-Medusa is a set of commerce modules and tools that allow you to build rich, reliable, and performant commerce applications without reinventing core commerce logic. The modules can be customized and used to build advanced ecommerce stores, marketplaces, or any product that needs foundational commerce primitives. All modules are open-source and freely available on npm.
+To install the package, use Yarn:
 
-Learn more about [Medusa’s architecture](https://docs.medusajs.com/learn/introduction/architecture) and [commerce modules](https://docs.medusajs.com/learn/fundamentals/modules/commerce-modules) in the Docs.
+```bash
+yarn add @kb0912/notification-brevo
+```
 
-## Community & Contributions
+### Configuration
+Add the plugin to your medusa-config.ts file to enable Brevo notifications in your Medusa project.
 
-The community and core team are available in [GitHub Discussions](https://github.com/medusajs/medusa/discussions), where you can ask for support, discuss roadmap, and share ideas.
+```bash
+modules: [
+ // Other module...
+    {
+      resolve: "@medusajs/medusa/notification",
+      options: {
+        providers: [
+          {
+            resolve: "@kb0912/notification-brevo/providers/notifications-brevo",
+            id: "brevo",
+            options: {
+              channels: ["email"],
+               apiKey: process.env.BREVO_API_KEY || "your-brevo-api-key",
+      from: process.env.BREVO_FROM_EMAIL || "info@example.com",
+      orderPlacedTemplateId: process.env.BREVO_ORDER_PLACED_TEMPLATE_ID || "11",
+      orderCanceledTemplateId: process.env.BREVO_ORDER_CANCELED_TEMPLATE_ID || "14",
+      customerCreatedTemplateId: process.env.BREVO_CUSTOMER_CREATED_TEMPLATE_ID || "12",
+      abandonedCartTemplateId: process.env.BREVO_ABANDONED_CART_TEMPLATE_ID || "13",
+            },
+          },
+        ],
+      }
+      },
+      }
+}
+```
+then 
+```bash
+const plugins = [
+  // Other plugins...
+  {
+    resolve: "@kb0912/notification-brevo",
+    options: {
+    
+      
+    },
+  },
+];
+```
 
-Join our [Discord server](https://discord.com/invite/medusajs) to meet other community members.
+### Environment Variables
 
-## Other channels
+You can use environment variables to override default values:
 
-- [GitHub Issues](https://github.com/medusajs/medusa/issues)
-- [Twitter](https://twitter.com/medusajs)
-- [LinkedIn](https://www.linkedin.com/company/medusajs)
-- [Medusa Blog](https://medusajs.com/blog/)
-# notification-brevo
+```bash
+# .env
+BREVO_API_KEY=your-brevo-api-key
+BREVO_FROM_EMAIL=info@example.com
+BREVO_ORDER_PLACED_TEMPLATE_ID=11
+BREVO_ORDER_CANCELED_TEMPLATE_ID=14
+BREVO_CUSTOMER_CREATED_TEMPLATE_ID=12
+BREVO_ABANDONED_CART_TEMPLATE_ID=13
+BREVO_CART_FIRST_DELAY=24
+BREVO_CART_SECOND_DELAY=48
+BREVO_CART_THIRD_DELAY=72
+ENABLE_ABANDONED_CARTS=true
+```
+
+### Usage
+Once configured, the plugin will:
+
+Send order confirmation emails when an order is placed.
+Send abandoned cart reminder emails based on the configured delays (e.g., 24, 48, 72 hours) after the cart's last update.
+Prerequisites
+
+A Medusa server running v2.x.
+A Brevo account with API key and email templates set up.

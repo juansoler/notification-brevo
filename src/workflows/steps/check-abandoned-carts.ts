@@ -32,12 +32,9 @@ export const checkAbandonedCartsWorkflow = createWorkflow(
         const now = new Date();
         const seventyTwoHoursAgo = new Date(now.getTime() - 72 * 60 * 60 * 1000);
 
-        // Tính các ngưỡng kiểm tra dựa trên số phần tử thực tế trong checks
         const checkTimes = abandonedCartConfig.checks.map(check =>
           new Date(now.getTime() - parseInt(check.delay) * 60 * 60 * 1000)
         );
-
-        //logger.info(`Checking intervals: ${abandonedCartConfig.checks.map(c => `${c.delay} hours`).join(", ")}`);
 
         const { data: carts } = await query.graph({
           entity: "cart",
@@ -52,19 +49,21 @@ export const checkAbandonedCartsWorkflow = createWorkflow(
           },
         });
 
-        //logger.info(`Found ${carts.length} carts to check`);
+        logger.info(`Found ${carts.length} carts to check`);
 
         for (const cart of carts) {
-          const latestItemUpdate = cart.items?.length > 0
-            ? cart.items.sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())[0].updated_at
-            : cart.updated_at;
+          if (!cart.items?.length) {
+            logger.info(`Cart ${cart.id} skipped: No items in cart`);
+            continue;
+          }
+
+          const latestItemUpdate = cart.items.sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())[0].updated_at;
           const check = new Date(latestItemUpdate);
           const hoursSinceUpdate = Math.floor((now.getTime() - check.getTime()) / (1000 * 60 * 60));
 
           const notifiedFlags = cart.metadata || {};
 
           let actionIndex = -1;
-         
           for (let i = checkTimes.length - 1; i >= 0; i--) {
             if (check < checkTimes[i] && !notifiedFlags[`abandonedcart_mail_${i + 1}`]) {
               actionIndex = i;
@@ -75,8 +74,8 @@ export const checkAbandonedCartsWorkflow = createWorkflow(
           if (actionIndex >= 0) {
             const delay = abandonedCartConfig.checks[actionIndex].delay;
             const flagKey = `abandonedcart_mail_${actionIndex + 1}`;
-            //logger.info(`Cart ${cart.id}: check = ${check}, hoursSinceUpdate = ${hoursSinceUpdate}`);
-            //logger.info(`Sending abandoned cart email #${actionIndex + 1} to ${cart.email} after ${delay} hours`);
+            logger.info(`Cart ${cart.id}: check = ${check}, hoursSinceUpdate = ${hoursSinceUpdate}`);
+            logger.info(`Sending abandoned cart email #${actionIndex + 1} to ${cart.email} after ${delay} hours`);
             await sendAbandonedCartWorkflow(stepContainer).run({ input: { cartId: cart.id } });
             await cartModuleService.updateCarts(cart.id, {
               metadata: { ...notifiedFlags, [flagKey]: true },

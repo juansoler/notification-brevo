@@ -18,5 +18,5 @@ export default async function checkAbandonedCartsJob(container: MedusaContainer)
 
 export const config = {
   name: "check-abandoned-carts",
-  schedule: "* * * * *", // Chạy mỗi giờ
+  schedule: "1 * * * *", // Chạy mỗi giờ
 };
