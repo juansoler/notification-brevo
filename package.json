@@ -1,6 +1,6 @@
 {
   "name": "@kb0912/notification-brevo",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "description": "Sending email notification using Brevo.",
   "author": "KBa (https://medusajs.com)",
   "license": "MIT",
