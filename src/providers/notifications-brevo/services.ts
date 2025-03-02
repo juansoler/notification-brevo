@@ -81,7 +81,7 @@ class BrevoProviderService extends AbstractNotificationProviderService {
           payment_collections: order?.payment_collections?.payments,
           fulfillments: order?.fulfillments,
         };
-        this.logger.info(JSON.stringify(params, null, 2));
+        
       break;
 
       case "order.canceled":
