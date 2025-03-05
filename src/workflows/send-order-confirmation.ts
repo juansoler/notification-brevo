@@ -12,7 +12,7 @@ export const sendOrderConfirmationWorkflow = createWorkflow(
   ({ id }: WorkflowInput) => {
     const { data: orders } = useQueryGraphStep({
       entity: "order",
-      fields: ["id", "email", "currency_code", "display_id", "shipping_subtotal", "total", "items.*", "shipping_address.*", "payment_collections.*","payment_collections.payments.*", "fulfillments.*", "shipping_methods.*"],
+      fields: ["*", "id", "created_at","email", "currency_code", "display_id", "shipping_subtotal", "total", "items.*","billing_address.*", "shipping_address.*", "payment_collections.*","payment_collections.payments.*", "fulfillments.*", "shipping_methods.*"],
       filters: { id },
     });
     //console.log("Order data retrieved (resolved):", JSON.stringify(orders, null, 2));

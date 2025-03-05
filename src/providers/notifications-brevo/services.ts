@@ -64,25 +64,56 @@ class BrevoProviderService extends AbstractNotificationProviderService {
           currency: order.currency_code.toUpperCase(), // "VND"
         });
 
+        const paymentMethodMap = {
+          "pp_bank-transfer_bank-transfer": "Bank Transfer",
+          "pp_stripe_stripe": "Credit Card",
+          "pp_system_default": "Cash on Delivery",
+
+       };
+  
+      
+      const mapPaymentMethod = (providerId) => {
+          
+          if (providerId && providerId.startsWith("pp_stripe_")) {
+              return "Credit Card";
+          }
+          
+          return paymentMethodMap[providerId] || providerId;
+      };
+
         params = {
           order_id: order?.id,
           email: order?.email,
           currency_code: order?.currency_code,
+          
+          date_placed: new Date(order?.created_at).toLocaleDateString(),
           display_id: order?.display_id,
           total: formatter.format(order?.total), 
-          customer_name: order?.shipping_address?.first_name,
+          customer_name: `${order?.shipping_address?.first_name} ${order?.shipping_address?.last_name}`, // Full name
           items: order?.items.map((item: any) => ({
             ...item,
-            unit_price: formatter.format(item.total), 
-          })),
+            unit_price: formatter.format(item.unit_price),
+            total: formatter.format(item.total),
+            thumbnail: item.thumbnail,
+            title: item.product_title,
+            description: item.product_description
+        })),
           shipping_address: order?.shipping_address,
+          billing_address: order?.billing_address, 
           shipping_subtotal: formatter.format(order?.shipping_subtotal), 
           shipping_methods: order?.shipping_methods,
-          payment_collections: order?.payment_collections?.payments,
+          payment_collections: order?.payment_collections[0]?.payments.map(payment => ({
+            ...payment,
+            provider_id: mapPaymentMethod(payment.provider_id) // Ánh xạ provider_id
+          })) || [],
+
           fulfillments: order?.fulfillments,
         };
         
       break;
+
+     
+
 
       case "order.canceled":
         templateId = parseInt(this.options.orderCanceledTemplateId);
@@ -109,7 +140,15 @@ class BrevoProviderService extends AbstractNotificationProviderService {
           created_at: (data as any).cart?.created_at,
           name: (data as any).cart?.name,
           phone: (data as any).cart?.phone,
-          items: (data as any).cart?.items, 
+          item: (data as any).cart?.items.map((item: any) => ({
+            ...item,
+            unit_price: formatter.format(item.unit_price),
+            total: formatter.format(item.total),
+            thumbnail: item.thumbnail,
+            title: item.product_title,
+            description: item.product_description
+        })),
+          
         };
         break;
 
