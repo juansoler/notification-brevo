@@ -44,6 +44,20 @@ class BrevoProviderService extends AbstractNotificationProviderService {
     );
   }
 
+  humanPrice(amount, currencyCode) {
+    if (!amount)
+      return "0.00";
+
+    const formatter = new Intl.NumberFormat([], {
+      style: "currency",
+      currencyDisplay: "narrowSymbol",
+      currency: currencyCode.toUpperCase(), // "VND"
+    });
+
+    return formatter.format(amount);
+  }
+
+
   async send(
     notification: ProviderSendNotificationDTO
   ): Promise<ProviderSendNotificationResultsDTO> {
@@ -88,19 +102,19 @@ class BrevoProviderService extends AbstractNotificationProviderService {
           
           date_placed: new Date(order?.created_at).toLocaleDateString(),
           display_id: order?.display_id,
-          total: formatter.format(order?.total), 
+          total: this.humanPrice(order?.total, order?.currency_code), 
           customer_name: `${order?.shipping_address?.first_name} ${order?.shipping_address?.last_name}`, // Full name
           items: order?.items.map((item: any) => ({
             ...item,
-            unit_price: formatter.format(item.unit_price),
-            total: formatter.format(item.total),
+            unit_price: this.humanPrice(item.unit_price, order?.currency_code),
+            total: this.humanPrice(item.total, order?.currency_code),
             thumbnail: item.thumbnail,
             title: item.product_title,
             description: item.product_description
         })),
           shipping_address: order?.shipping_address,
           billing_address: order?.billing_address, 
-          shipping_subtotal: formatter.format(order?.shipping_subtotal), 
+          shipping_subtotal: this.humanPrice(order?.shipping_subtotal, order?.currency_code), 
           shipping_methods: order?.shipping_methods,
           payment_collections: order?.payment_collections[0]?.payments.map(payment => ({
             ...payment,
@@ -135,20 +149,22 @@ class BrevoProviderService extends AbstractNotificationProviderService {
       case "cart.abandoned":
         templateId = parseInt(this.options.abandonedCartTemplateId);
         
+        const cart = (data as any).cart;
+
         params = {
-          cart_id: (data as any).cart?.id,
-          created_at: (data as any).cart?.created_at,
-          name: (data as any).cart?.name,
-          phone: (data as any).cart?.phone,
-          item: (data as any).cart?.items.map((item: any) => ({
+          cart_id: cart?.id,
+          created_at: cart?.created_at,
+          name: cart?.name,
+          phone: cart?.phone,
+          currency_code: cart?.currency_code,
+          item: cart?.items.map((item: any) => ({
             ...item,
-            unit_price: formatter.format(item.unit_price),
-            total: formatter.format(item.total),
+            unit_price: this.humanPrice(item.unit_price, cart?.currency_code),
+            total: this.humanPrice(item.total, cart?.currency_code),
             thumbnail: item.thumbnail,
             title: item.product_title,
-            description: item.product_description
-        })),
-          
+            description: item.product_description,
+          })),
         };
         break;
 

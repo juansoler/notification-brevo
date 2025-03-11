@@ -19,6 +19,7 @@ export const sendAbandonedCartWorkflow = createWorkflow(
         "customer.first_name",
         "customer.last_name",
         "customer.phone",
+        "currency_code",
         "items.*"
       ],
       filters: { id: cartId },
