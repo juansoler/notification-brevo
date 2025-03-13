@@ -51,7 +51,7 @@ class BrevoProviderService extends AbstractNotificationProviderService {
     const formatter = new Intl.NumberFormat([], {
       style: "currency",
       currencyDisplay: "narrowSymbol",
-      currency: currencyCode.toUpperCase(), // "VND"
+      currency: currencyCode, // "VND"
     });
 
     return formatter.format(amount);
@@ -71,12 +71,7 @@ class BrevoProviderService extends AbstractNotificationProviderService {
         templateId = parseInt(this.options.orderPlacedTemplateId);
         const order = (data as any).order;
 
-        // Tạo formatter dựa trên currency_code
-        const formatter = new Intl.NumberFormat([], {
-          style: "currency",
-          currencyDisplay: "narrowSymbol",
-          currency: order.currency_code.toUpperCase(), // "VND"
-        });
+       
 
         const paymentMethodMap = {
           "pp_bank-transfer_bank-transfer": "Bank Transfer",
