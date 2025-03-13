@@ -145,7 +145,7 @@ class BrevoProviderService extends AbstractNotificationProviderService {
         templateId = parseInt(this.options.abandonedCartTemplateId);
         
         const cart = (data as any).cart;
-
+        
         params = {
           cart_id: cart?.id,
           created_at: cart?.created_at,

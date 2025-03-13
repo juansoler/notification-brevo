@@ -29,26 +29,17 @@ export const sendAbandonedCartWorkflow = createWorkflow(
       "prepare-abandoned-cart-notification",
       async (input: { data: any[] }) => {
         const carts = input.data;
-        //console.log("Cart data retrieved:", carts);
 
         const notificationData: CreateNotificationDTO[] = [
           {
             to: carts[0].email,
             channel: "email",
             template: "cart.abandoned",
-            data: {
-              cart: {
-                id: carts[0].id,
-                created_at: carts[0].created_at,
-                name: (carts[0].customer?.first_name || "") + " " + (carts[0].customer?.last_name || ""),
-                phone: carts[0].customer?.phone || "Không có số điện thoại",
-                items: carts[0].items // Thêm danh sách items vào data.cart
-              },
-            },
+            data: { cart: carts[0] },
           },
         ];
 
-        //console.log("Prepared abandoned cart notification data:", notificationData);
+
         return new StepResponse(notificationData);
       }
     );
