@@ -4,6 +4,8 @@ export interface BrevoProviderConfig {
     orderPlacedTemplateId: string;
     orderCanceledTemplateId: string;
     customerCreatedTemplateId: string;
+    promotionNewCustomerTemplateId: string;
+    shipmentConfirmedTemplateId: string;
     abandonedCartTemplateId: string;
     abandonedCartIntervals: string
     abandoned_cart: {

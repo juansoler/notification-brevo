@@ -16,11 +16,11 @@ export default async function checkAbandonedCartsJob(container: MedusaContainer)
   }
 }
 
-const oneHour = 60 * 60 * 1000; 
+const oneMin = 60 * 1000; 
 
 export const config = {
   name: "check-abandoned-carts",
   schedule: {
-    interval: oneHour
+    interval: oneMin
   },
 };

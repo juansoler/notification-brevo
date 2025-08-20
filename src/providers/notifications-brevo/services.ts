@@ -121,9 +121,6 @@ class BrevoProviderService extends AbstractNotificationProviderService {
         
       break;
 
-     
-
-
       case "order.canceled":
         templateId = parseInt(this.options.orderCanceledTemplateId);
         params = {
@@ -140,6 +137,55 @@ class BrevoProviderService extends AbstractNotificationProviderService {
           customer_id: (data as any).customer?.id,
         };
         break;
+
+      case "promotion-new-customer":
+        templateId = parseInt(this.options.promotionNewCustomerTemplateId);
+        params = {
+          first_name: (data as any).first_name,
+          last_name: (data as any).last_name,
+          phone: (data as any).phone,
+          ends_at: (data as any).ends_at,
+          promotion_code: (data as any).promotion_code,
+        };
+      break;
+
+      case "shipment.confirmed":
+        templateId = parseInt(this.options.shipmentConfirmedTemplateId);
+        const shipmentOrder = (data as any).order;
+         const trackingNumbers = shipmentOrder?.fulfillments
+          ?.flatMap((fulfillment: any) =>
+            fulfillment.labels?.map((label: any) => label.tracking_number)
+          )
+          ?.filter(Boolean) || [];
+
+        params = {
+          order_id: shipmentOrder?.id,
+          email: shipmentOrder?.email,
+          currency_code: shipmentOrder?.currency_code,
+          date_placed: new Date(shipmentOrder?.created_at).toLocaleDateString(),
+          display_id: shipmentOrder?.display_id,
+          total: this.humanPrice(shipmentOrder?.total, shipmentOrder?.currency_code),
+          customer_name: `${shipmentOrder?.shipping_address?.first_name} ${shipmentOrder?.shipping_address?.last_name}`,
+          items: shipmentOrder?.items.map((item: any) => ({
+            ...item,
+            unit_price: this.humanPrice(item.unit_price, shipmentOrder?.currency_code),
+            total: this.humanPrice(item.total, shipmentOrder?.currency_code),
+            thumbnail: item.thumbnail,
+            title: item.product_title,
+            description: item.product_description
+          })),
+          shipping_address: shipmentOrder?.shipping_address,
+          billing_address: shipmentOrder?.billing_address,
+          shipping_subtotal: this.humanPrice(shipmentOrder?.shipping_subtotal, shipmentOrder?.currency_code),
+          shipping_methods: shipmentOrder?.shipping_methods,
+          payment_collections: shipmentOrder?.payment_collections?.[0]?.payments.map(payment => ({
+            ...payment,
+            provider_id: mapPaymentMethod(payment.provider_id)
+          })) || [],
+          fulfillments: shipmentOrder?.fulfillments,
+          tracking_number: trackingNumbers[0] || "",
+        };
+      break;
 
       case "cart.abandoned":
         templateId = parseInt(this.options.abandonedCartTemplateId);

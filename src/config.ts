@@ -9,7 +9,7 @@ interface Check {
       { delay: process.env.BREVO_CART_FIRST_DELAY || 24},
       { delay: process.env.BREVO_CART_SECOND_DELAY },
       { delay: process.env.BREVO_CART_THIRD_DELAY },
-    ].filter((check): check is Check => // Type guard để ép kiểu
+    ].filter((check): check is Check => 
       check.delay !== undefined && check.delay !== null && check.delay !== ""
     ),
   };
