@@ -182,12 +182,14 @@ class BrevoProviderService extends AbstractNotificationProviderService {
 						shipping_methods: shipmentFulfillment?.order?.shipping_methods || [],
 						shipping_address: shipmentFulfillment?.order?.shipping_address,
 						billing_address: shipmentFulfillment?.order?.billing_address,
-						items: shipmentFulfillment?.order?.items.map((item: any) => ({
-							title: item.product_title,
-							description: item.product_description,
-							quantity: item.quantity,
-							unit_price: this.humanPrice(item.unit_price, shipmentFulfillment?.order?.currency_code),
-						})),
+						items: Array.isArray(shipmentFulfillment?.order?.items)
+              ? shipmentFulfillment.order.items.map((item: any) => ({
+                  title: item.product_title,
+                  description: item.product_description,
+                  quantity: item.quantity,
+                  unit_price: this.humanPrice(item.unit_price, shipmentFulfillment?.order?.currency_code),
+                }))
+              : [],
 						subtotal: this.humanPrice(shipmentFulfillment?.order?.subtotal, shipmentFulfillment?.order?.currency_code),
 						shipping_total: this.humanPrice(shipmentFulfillment?.order?.shipping_total, shipmentFulfillment?.order?.currency_code),
 						total: this.humanPrice(shipmentFulfillment?.order?.total, shipmentFulfillment?.order?.currency_code),
