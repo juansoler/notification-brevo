@@ -19,7 +19,9 @@ export const sendShipmentConfirmationWorkflow = createWorkflow(
         "tracking_numbers",
         "order.*", // Fetch all order details related to the fulfillment
         "order.email",
-        "order.shipping_address",
+        "order.shipping_address.*",
+        "order.billing_address.*",
+        "labels.*",
       ],
       filters: { id },
     });
@@ -40,8 +42,10 @@ export const sendShipmentConfirmationWorkflow = createWorkflow(
         },
       },
     ];
-
+    
     const notification = sendNotificationStep(notificationData);
+   
+
 
     return new WorkflowResponse(notification);
   }

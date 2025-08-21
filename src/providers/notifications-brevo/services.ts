@@ -162,24 +162,38 @@ class BrevoProviderService extends AbstractNotificationProviderService {
 			case "shipment.confirmed":
 				templateId = parseInt(this.options.shipmentConfirmedTemplateId);
 
-				// Get the fulfillment object from the notification data
 				const shipmentFulfillment = (data as any).fulfillment;
-        const orderDetails = (data as any).order;
 
-				// Extract the shipped time and tracking numbers from the fulfillment
 				const shippedAt = shipmentFulfillment?.shipped_at;
+
 				const trackingNumbers = shipmentFulfillment?.labels
 					?.map((label: any) => label.tracking_number)
 					?.filter(Boolean) || [];
 
+				const shippingAddress = shipmentFulfillment?.order?.shipping_address;
+
 				params = {
-          customer_name: orderDetails?.shipping_address?.first_name + " " + orderDetails?.shipping_address?.last_name,
-					shipping_address: orderDetails?.shipping_address,
-          shipped_at: shippedAt, // The time the shipment was shipped
-					//tracking_numbers: trackingNumbers, // Array of tracking numbers
-					// Optionally, you can format the date or pick the first tracking number if needed
+					customer_name: shippingAddress?.first_name + " " + shippingAddress?.last_name,
+					shipped_at: shipmentFulfillment?.shipped_at,
 					tracking_number: trackingNumbers[0] || "",
+					order: {
+						display_id: shipmentFulfillment?.order?.display_id,
+						date: new Date(shipmentFulfillment?.order?.created_at).toLocaleDateString(),
+						shipping_methods: shipmentFulfillment?.order?.shipping_methods || [],
+						shipping_address: shipmentFulfillment?.order?.shipping_address,
+						billing_address: shipmentFulfillment?.order?.billing_address,
+						items: shipmentFulfillment?.order?.items.map((item: any) => ({
+							title: item.product_title,
+							description: item.product_description,
+							quantity: item.quantity,
+							unit_price: this.humanPrice(item.unit_price, shipmentFulfillment?.order?.currency_code),
+						})),
+						subtotal: this.humanPrice(shipmentFulfillment?.order?.subtotal, shipmentFulfillment?.order?.currency_code),
+						shipping_total: this.humanPrice(shipmentFulfillment?.order?.shipping_total, shipmentFulfillment?.order?.currency_code),
+						total: this.humanPrice(shipmentFulfillment?.order?.total, shipmentFulfillment?.order?.currency_code),
+					}
 				};
+
 				break;
 
 			case "cart.abandoned":
