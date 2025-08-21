@@ -4,42 +4,40 @@ import { sendNotificationStep } from "./steps/send-notification";
 import { CreateNotificationDTO } from "@medusajs/framework/types";
 
 type WorkflowInput = {
-  id: string;
+  id: string; // This will now be the shipment (fulfillment) ID
 };
 
 export const sendShipmentConfirmationWorkflow = createWorkflow(
   "send-shipment-confirmation",
   ({ id }: WorkflowInput) => {
-    const { data: orders } = useQueryGraphStep({
-      entity: "order",
+    // Query the fulfillment and include the related order
+    const { data: fulfillments } = useQueryGraphStep({
+      entity: "fulfillment",
       fields: [
         "*",
         "id",
-        "created_at",
-        "email",
-        "currency_code",
-        "display_id",
-        "shipping_subtotal",
-        "total",
-        "items.*",
-        "billing_address.*",
-        "shipping_address.*",
-        "payment_collections.*",
-        "payment_collections.payments.*",
-        "fulfillments.*",
-        "fulfillments.labels.*", // Add this line to get label info, including tracking number
- 
-        
+        "tracking_numbers",
+        "order.*", // Fetch all order details related to the fulfillment
+        "order.email",
+        "order.shipping_address",
       ],
       filters: { id },
     });
 
+    // Make sure the fulfillment and order exist
+    if (!fulfillments[0] || !fulfillments[0].order || !fulfillments[0].order.email) {
+      throw new Error("Fulfillment or order not found, or order email missing.");
+    }
+
     const notificationData: CreateNotificationDTO[] = [
       {
-        to: orders[0].email,
+        to: fulfillments[0].order.email,
         channel: "email",
         template: "shipment.confirmed", // Use your actual shipment confirmation template ID
-        data: { order: orders[0] },
+        data: { 
+          order: fulfillments[0].order,
+          fulfillment: fulfillments[0], // You can also pass fulfillment details if needed
+        },
       },
     ];
 

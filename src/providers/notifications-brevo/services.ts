@@ -1,262 +1,261 @@
-import { 
-  AbstractNotificationProviderService, 
-  MedusaError,
+import {
+	AbstractNotificationProviderService,
+	MedusaError,
 } from "@medusajs/framework/utils";
-import { 
-  ProviderSendNotificationDTO, 
-  ProviderSendNotificationResultsDTO,
-  Logger,
+import {
+	ProviderSendNotificationDTO,
+	ProviderSendNotificationResultsDTO,
+	Logger,
 } from "@medusajs/framework/types";
 import * as Brevo from "@getbrevo/brevo";
-import { BrevoProviderConfig } from "./types";
+import {
+	BrevoProviderConfig
+} from "./types";
 
 
 
 class BrevoProviderService extends AbstractNotificationProviderService {
-  static identifier = "brevo";
+	static identifier = "brevo";
 
-  public options: BrevoProviderConfig; // Đổi từ protected thành public
-  protected apiInstance: Brevo.TransactionalEmailsApi;
-  protected logger: Logger;
+	public options: BrevoProviderConfig; // Đổi từ protected thành public
+	protected apiInstance: Brevo.TransactionalEmailsApi;
+	protected logger: Logger;
 
-  constructor({ logger }: { logger: Logger }, options: BrevoProviderConfig) {
-    super();
-    this.options = options;
-    this.logger = logger;
-    
-    if (!this.options.apiKey) {
-      throw new MedusaError(
-        MedusaError.Types.INVALID_DATA,
-        "BREVO_API_KEY need to be set"
-      );
-    }
-    if (!this.options.from) {
-      throw new MedusaError(
-        MedusaError.Types.INVALID_DATA,
-        "BREVO_FROM_EMAIL need to be set"
-      );
-    }
+	constructor({
+		logger
+	}: {
+		logger: Logger
+	}, options: BrevoProviderConfig) {
+		super();
+		this.options = options;
+		this.logger = logger;
 
-    this.apiInstance = new Brevo.TransactionalEmailsApi();
-    this.apiInstance.setApiKey(
-      Brevo.TransactionalEmailsApiApiKeys.apiKey,
-      this.options.apiKey
-    );
-  }
+		if (!this.options.apiKey) {
+			throw new MedusaError(
+				MedusaError.Types.INVALID_DATA,
+				"BREVO_API_KEY need to be set"
+			);
+		}
+		if (!this.options.from) {
+			throw new MedusaError(
+				MedusaError.Types.INVALID_DATA,
+				"BREVO_FROM_EMAIL need to be set"
+			);
+		}
 
-  humanPrice(amount, currencyCode) {
-    if (!amount)
-      return "0.00";
+		this.apiInstance = new Brevo.TransactionalEmailsApi();
+		this.apiInstance.setApiKey(
+			Brevo.TransactionalEmailsApiApiKeys.apiKey,
+			this.options.apiKey
+		);
+	}
 
-    const formatter = new Intl.NumberFormat([], {
-      style: "currency",
-      currencyDisplay: "narrowSymbol",
-      currency: currencyCode, // "VND"
-    });
+	humanPrice(amount, currencyCode) {
+		if (!amount)
+			return "0.00";
 
-    return formatter.format(amount);
-  }
+		const formatter = new Intl.NumberFormat([], {
+			style: "currency",
+			currencyDisplay: "narrowSymbol",
+			currency: currencyCode, // "VND"
+		});
+
+		return formatter.format(amount);
+	}
 
 
-  async send(
-    notification: ProviderSendNotificationDTO
-  ): Promise<ProviderSendNotificationResultsDTO> {
-    const { to, template, data } = notification;
-    let templateId: number;
-    let params: any;
-   
+	async send(
+		notification: ProviderSendNotificationDTO
+	): Promise < ProviderSendNotificationResultsDTO > {
+		const {
+			to,
+			template,
+			data
+		} = notification;
+		let templateId: number;
+		let params: any;
 
-    switch (template) {
-      case "order.placed":
-        templateId = parseInt(this.options.orderPlacedTemplateId);
-        const order = (data as any).order;
 
-       
+		switch (template) {
+			case "order.placed":
+				templateId = parseInt(this.options.orderPlacedTemplateId);
+				const order = (data as any).order;
 
-        const paymentMethodMap = {
-          "pp_bank-transfer_bank-transfer": "Bank Transfer",
-          "pp_stripe_stripe": "Credit Card",
-          "pp_system_default": "Cash on Delivery",
 
-       };
-  
-      
-      const mapPaymentMethod = (providerId) => {
-          
-          if (providerId && providerId.startsWith("pp_stripe_")) {
-              return "Credit Card";
-          }
-          
-          return paymentMethodMap[providerId] || providerId;
-      };
 
-        params = {
-          order_id: order?.id,
-          email: order?.email,
-          currency_code: order?.currency_code,
-          
-          date_placed: new Date(order?.created_at).toLocaleDateString(),
-          display_id: order?.display_id,
-          total: this.humanPrice(order?.total, order?.currency_code), 
-          customer_name: `${order?.shipping_address?.first_name} ${order?.shipping_address?.last_name}`, // Full name
-          items: order?.items.map((item: any) => ({
-            ...item,
-            unit_price: this.humanPrice(item.unit_price, order?.currency_code),
-            total: this.humanPrice(item.total, order?.currency_code),
-            thumbnail: item.thumbnail,
-            title: item.product_title,
-            description: item.product_description
-        })),
-          shipping_address: order?.shipping_address,
-          billing_address: order?.billing_address, 
-          shipping_subtotal: this.humanPrice(order?.shipping_subtotal, order?.currency_code), 
-          shipping_methods: order?.shipping_methods,
-          payment_collections: order?.payment_collections[0]?.payments.map(payment => ({
-            ...payment,
-            provider_id: mapPaymentMethod(payment.provider_id) // Ánh xạ provider_id
-          })) || [],
+				const paymentMethodMap = {
+					"pp_bank-transfer_bank-transfer": "Bank Transfer",
+					"pp_stripe_stripe": "Credit Card",
+					"pp_system_default": "Cash on Delivery",
 
-          fulfillments: order?.fulfillments,
-        };
-        
-      break;
+				};
 
-      case "order.canceled":
-        templateId = parseInt(this.options.orderCanceledTemplateId);
-        params = {
-          order_id: (data as any).order?.id,
-          customer_name: (data as any).order?.billing_address?.first_name,
-        };
-        break;
 
-      case "customer.created":
-        templateId = parseInt(this.options.customerCreatedTemplateId);
-        params = {
-          name: (data as any).customer?.first_name + " " + ((data as any).customer?.last_name || ""),
-          phone: (data as any).customer?.phone,
-          customer_id: (data as any).customer?.id,
-        };
-        break;
+				const mapPaymentMethod = (providerId) => {
 
-      case "promotion-new-customer":
-        templateId = parseInt(this.options.promotionNewCustomerTemplateId);
-        params = {
-          first_name: (data as any).first_name,
-          last_name: (data as any).last_name,
-          phone: (data as any).phone,
-          ends_at: (data as any).ends_at,
-          promotion_code: (data as any).promotion_code,
-        };
-      break;
+					if (providerId && providerId.startsWith("pp_stripe_")) {
+						return "Credit Card";
+					}
 
-      case "shipment.confirmed":
-        templateId = parseInt(this.options.shipmentConfirmedTemplateId);
-        const shipmentOrder = (data as any).order;
-         const trackingNumbers = shipmentOrder?.fulfillments
-          ?.flatMap((fulfillment: any) =>
-            fulfillment.labels?.map((label: any) => label.tracking_number)
-          )
-          ?.filter(Boolean) || [];
+					return paymentMethodMap[providerId] || providerId;
+				};
 
-        params = {
-          order_id: shipmentOrder?.id,
-          email: shipmentOrder?.email,
-          currency_code: shipmentOrder?.currency_code,
-          date_placed: new Date(shipmentOrder?.created_at).toLocaleDateString(),
-          display_id: shipmentOrder?.display_id,
-          total: this.humanPrice(shipmentOrder?.total, shipmentOrder?.currency_code),
-          customer_name: `${shipmentOrder?.shipping_address?.first_name} ${shipmentOrder?.shipping_address?.last_name}`,
-          items: shipmentOrder?.items.map((item: any) => ({
-            ...item,
-            unit_price: this.humanPrice(item.unit_price, shipmentOrder?.currency_code),
-            total: this.humanPrice(item.total, shipmentOrder?.currency_code),
-            thumbnail: item.thumbnail,
-            title: item.product_title,
-            description: item.product_description
-          })),
-          shipping_address: shipmentOrder?.shipping_address,
-          billing_address: shipmentOrder?.billing_address,
-          shipping_subtotal: this.humanPrice(shipmentOrder?.shipping_subtotal, shipmentOrder?.currency_code),
-          shipping_methods: shipmentOrder?.shipping_methods,
-          payment_collections: shipmentOrder?.payment_collections?.[0]?.payments.map(payment => ({
-            ...payment,
-            provider_id: mapPaymentMethod(payment.provider_id)
-          })) || [],
-          fulfillments: shipmentOrder?.fulfillments,
-          tracking_number: trackingNumbers[0] || "",
-        };
-      break;
+				params = {
+					order_id: order?.id,
+					email: order?.email,
+					currency_code: order?.currency_code,
 
-      case "cart.abandoned":
-        templateId = parseInt(this.options.abandonedCartTemplateId);
-        
-        const cart = (data as any).cart;
-        
-        params = {
-          cart_id: cart?.id,
-          created_at: cart?.created_at,
-          name: cart?.name,
-          phone: cart?.phone,
-          currency_code: cart?.currency_code,
-          item: cart?.items.map((item: any) => ({
-            ...item,
-            unit_price: this.humanPrice(item.unit_price, cart?.currency_code),
-            total: this.humanPrice(item.total, cart?.currency_code),
-            thumbnail: item.thumbnail,
-            title: item.product_title,
-            description: item.product_description,
-          })),
-        };
-        break;
+					date_placed: new Date(order?.created_at).toLocaleDateString(),
+					display_id: order?.display_id,
+					total: this.humanPrice(order?.total, order?.currency_code),
+					customer_name: `${order?.shipping_address?.first_name} ${order?.shipping_address?.last_name}`, // Full name
+					items: order?.items.map((item: any) => ({
+						...item,
+						unit_price: this.humanPrice(item.unit_price, order?.currency_code),
+						total: this.humanPrice(item.total, order?.currency_code),
+						thumbnail: item.thumbnail,
+						title: item.product_title,
+						description: item.product_description
+					})),
+					shipping_address: order?.shipping_address,
+					billing_address: order?.billing_address,
+					shipping_subtotal: this.humanPrice(order?.shipping_subtotal, order?.currency_code),
+					shipping_methods: order?.shipping_methods,
+					payment_collections: order?.payment_collections[0]?.payments.map(payment => ({
+						...payment,
+						provider_id: mapPaymentMethod(payment.provider_id) // Ánh xạ provider_id
+					})) || [],
 
-      default:
-        throw new MedusaError(
-          MedusaError.Types.INVALID_DATA,
-          `Template ${template} is not supported`
-        );
-    }
+					fulfillments: order?.fulfillments,
+				};
 
-    if (isNaN(templateId) || templateId === 0) {
-      throw new MedusaError(
-        MedusaError.Types.NOT_FOUND,
-        `Template ID for ${template} is not set in options`
-      );
-    }
+				break;
 
-    if (!to) {
-      throw new MedusaError(
-        MedusaError.Types.INVALID_DATA,
-        `Email is not found for ${template}`
-      );
-    }
+			case "order.canceled":
+				templateId = parseInt(this.options.orderCanceledTemplateId);
+				params = {
+					order_id: (data as any).order?.id,
+					customer_name: (data as any).order?.billing_address?.first_name,
+				};
+				break;
 
-    const sendSmtpEmail = new Brevo.SendSmtpEmail();
-    sendSmtpEmail.sender = { email: this.options.from };
-    sendSmtpEmail.to = [{ email: to }];
-    sendSmtpEmail.templateId = templateId;
-    sendSmtpEmail.params = params;
+			case "customer.created":
+				templateId = parseInt(this.options.customerCreatedTemplateId);
+				params = {
+					name: (data as any).customer?.first_name + " " + ((data as any).customer?.last_name || ""),
+					phone: (data as any).customer?.phone,
+					customer_id: (data as any).customer?.id,
+				};
+				break;
 
-    try {
-      const response = await this.apiInstance.sendTransacEmail(sendSmtpEmail);
-      this.logger.info(`Email sent to ${to} for template ${template}`);
+			case "promotion-new-customer":
+				templateId = parseInt(this.options.promotionNewCustomerTemplateId);
+				params = {
+					first_name: (data as any).first_name,
+					last_name: (data as any).last_name,
+					phone: (data as any).phone,
+					ends_at: (data as any).ends_at,
+					promotion_code: (data as any).promotion_code,
+				};
+				break;
 
-      return {
-        id: `${template}-${Date.now()}`,
-      };
-    } catch (error) {
-      this.logger.error(`Error while sending email ${to}:`, error);
-      throw new MedusaError(
-        MedusaError.Types.UNEXPECTED_STATE,
-        "Email is not send"
-      );
-    }
-  }
+			case "shipment.confirmed":
+				templateId = parseInt(this.options.shipmentConfirmedTemplateId);
 
-  async resend(
-    notification: ProviderSendNotificationDTO
-  ): Promise<ProviderSendNotificationResultsDTO> {
-    return this.send(notification);
-  }
+				// Get the fulfillment object from the notification data
+				const shipmentFulfillment = (data as any).fulfillment;
+        const orderDetails = (data as any).order;
+
+				// Extract the shipped time and tracking numbers from the fulfillment
+				const shippedAt = shipmentFulfillment?.shipped_at;
+				const trackingNumbers = shipmentFulfillment?.labels
+					?.map((label: any) => label.tracking_number)
+					?.filter(Boolean) || [];
+
+				params = {
+          customer_name: orderDetails?.shipping_address?.first_name + " " + orderDetails?.shipping_address?.last_name,
+					shipping_address: orderDetails?.shipping_address,
+          shipped_at: shippedAt, // The time the shipment was shipped
+					//tracking_numbers: trackingNumbers, // Array of tracking numbers
+					// Optionally, you can format the date or pick the first tracking number if needed
+					tracking_number: trackingNumbers[0] || "",
+				};
+				break;
+
+			case "cart.abandoned":
+				templateId = parseInt(this.options.abandonedCartTemplateId);
+
+				const cart = (data as any).cart;
+
+				params = {
+					cart_id: cart?.id,
+					created_at: cart?.created_at,
+					name: cart?.name,
+					phone: cart?.phone,
+					currency_code: cart?.currency_code,
+					item: cart?.items.map((item: any) => ({
+						...item,
+						unit_price: this.humanPrice(item.unit_price, cart?.currency_code),
+						total: this.humanPrice(item.total, cart?.currency_code),
+						thumbnail: item.thumbnail,
+						title: item.product_title,
+						description: item.product_description,
+					})),
+				};
+				break;
+
+			default:
+				throw new MedusaError(
+					MedusaError.Types.INVALID_DATA,
+					`Template ${template} is not supported`
+				);
+		}
+
+		if (isNaN(templateId) || templateId === 0) {
+			throw new MedusaError(
+				MedusaError.Types.NOT_FOUND,
+				`Template ID for ${template} is not set in options`
+			);
+		}
+
+		if (!to) {
+			throw new MedusaError(
+				MedusaError.Types.INVALID_DATA,
+				`Email is not found for ${template}`
+			);
+		}
+
+		const sendSmtpEmail = new Brevo.SendSmtpEmail();
+		sendSmtpEmail.sender = {
+			email: this.options.from
+		};
+		sendSmtpEmail.to = [{
+			email: to
+		}];
+		sendSmtpEmail.templateId = templateId;
+		sendSmtpEmail.params = params;
+
+		try {
+			const response = await this.apiInstance.sendTransacEmail(sendSmtpEmail);
+			this.logger.info(`Email sent to ${to} for template ${template}`);
+
+			return {
+				id: `${template}-${Date.now()}`,
+			};
+		} catch (error) {
+			this.logger.error(`Error while sending email ${to}:`, error);
+			throw new MedusaError(
+				MedusaError.Types.UNEXPECTED_STATE,
+				"Email is not send"
+			);
+		}
+	}
+
+	async resend(
+		notification: ProviderSendNotificationDTO
+	): Promise < ProviderSendNotificationResultsDTO > {
+		return this.send(notification);
+	}
 }
 
 export default BrevoProviderService;
