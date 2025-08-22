@@ -214,15 +214,16 @@ class BrevoProviderService extends AbstractNotificationProviderService {
 					name: cart?.name,
 					phone: cart?.phone,
 					currency_code: cart?.currency_code,
-					item: cart?.items.map((item: any) => ({
+					items: cart?.items.map((item: any) => ({
 						...item,
 						unit_price: this.humanPrice(item.unit_price, cart?.currency_code),
 						total: this.humanPrice(item.total, cart?.currency_code),
 						thumbnail: item.thumbnail,
 						title: item.product_title,
 						description: item.product_description,
+						variant_title: item.variant_title, // thêm nếu bạn cần hiển thị trong "Size"
 					})),
-				};
+					};
 				break;
 
 			default:
