@@ -170,12 +170,17 @@ class BrevoProviderService extends AbstractNotificationProviderService {
 					?.map((label: any) => label.tracking_number)
 					?.filter(Boolean) || [];
 
+				const trackingUrl = shipmentFulfillment?.labels
+					?.map((label: any) => label.tracking_url)
+					?.filter(Boolean) || [];
+
 				const shippingAddress = shipmentFulfillment?.order?.shipping_address;
 
 				params = {
 					customer_name: shippingAddress?.first_name + " " + shippingAddress?.last_name,
 					shipped_at: shipmentFulfillment?.shipped_at,
 					tracking_number: trackingNumbers[0] || "",
+					tracking_url: trackingUrl[0] || "",
 					order: {
 						display_id: shipmentFulfillment?.order?.display_id,
 						date: new Date(shipmentFulfillment?.order?.created_at).toLocaleDateString(),
