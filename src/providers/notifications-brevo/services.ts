@@ -79,7 +79,9 @@ class BrevoProviderService extends AbstractNotificationProviderService {
 		switch (template) {
 			case "order.placed":
 				templateId = parseInt(this.options.orderPlacedTemplateId);
-				const order = (data as any).order;
+                                const order = (data as any).order;
+                                const payments =
+                                        order?.payment_collections?.[0]?.payments ?? [];
 
 
 
@@ -121,10 +123,10 @@ class BrevoProviderService extends AbstractNotificationProviderService {
 					billing_address: order?.billing_address,
 					shipping_subtotal: this.humanPrice(order?.shipping_subtotal, order?.currency_code),
 					shipping_methods: order?.shipping_methods,
-					payment_collections: order?.payment_collections[0]?.payments.map(payment => ({
-						...payment,
-						provider_id: mapPaymentMethod(payment.provider_id) // Ánh xạ provider_id
-					})) || [],
+                                        payment_collections: payments.map((payment: any) => ({
+                                                ...payment,
+                                                provider_id: mapPaymentMethod(payment.provider_id) // Ánh xạ provider_id
+                                        })),
 
 					fulfillments: order?.fulfillments,
 				};
